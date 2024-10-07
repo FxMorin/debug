@@ -63,6 +63,9 @@ public class Agent implements ClassFileTransformer, Opcodes {
     @Override
     public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
         try {
+            if (className.equals("org.lwjgl.system.Configuration")) {
+                LWJGLInit.init(); // late init
+            }
             return transform_(loader, className, classBeingRedefined, protectionDomain, classfileBuffer);
         } catch (Throwable t) {
             t.printStackTrace();
@@ -428,7 +431,12 @@ public class Agent implements ClassFileTransformer, Opcodes {
             if (options.has("output"))
                 Properties.OUTPUT = options.valueOf(output);
         }
-        LWJGLInit.init();
+        for (Class<?> clazz : instrumentation.getAllLoadedClasses()) {
+            if (clazz.getName().equals("org.lwjgl.system.Configuration")) {
+                LWJGLInit.init();
+                break;
+            }
+        }
         Agent t = new Agent(excludes);
         instrumentation.addTransformer(t);
         RT.mainThread = Thread.currentThread();
